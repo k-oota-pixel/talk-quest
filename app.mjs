@@ -3,7 +3,18 @@ import {createPersona} from './persona.mjs';
 const $=id=>document.getElementById(id);
 const endpoint='https://task-quest.onrender.com/api/talk-quest';
 let user=null,authApi=null,persona,topic=null,category='すべて',history=[],turn=0,pending=false,controller=null,failedMessage=null;
-function newPartner(){persona=createPersona(crypto.getRandomValues(new Uint32Array(1))[0]);$('name').textContent=persona.name;$('avatar').textContent=persona.name.slice(0,1);$('attributes').textContent=`${persona.gender} / ${persona.ageGroup}（${persona.age}歳） / ${persona.ethnicity}`;$('personality').textContent=persona.personality;$('bio').textContent=`${persona.home}に暮らしています。好きなこと：${persona.hobby}`;$('intro').textContent=persona.intro;}
+function newPartner(){
+  persona=createPersona(crypto.getRandomValues(new Uint32Array(1))[0]);
+  $('name').textContent=persona.name;
+  const portrait=document.createElement('img');
+  portrait.src=`assets/portraits/${persona.portraitId}.webp`;
+  portrait.alt=`${persona.name}の人物イラスト`;
+  portrait.width=384;portrait.height=384;
+  portrait.onerror=()=>{const fallback=document.createElement('span');fallback.textContent=persona.name.slice(0,1);fallback.setAttribute('aria-label',`${persona.name}（イラストを読み込めませんでした）`);$('avatar').replaceChildren(fallback);};
+  $('avatar').replaceChildren(portrait);
+  $('attributes').textContent=`${persona.gender} / ${persona.ageGroup==='ご老人'?'シニア':persona.ageGroup}（${persona.age}歳）`;
+  $('personality').textContent=persona.personality;$('bio').textContent=`${persona.home}に暮らしています。好きなこと：${persona.hobby}`;$('intro').textContent=persona.intro;
+}
 function renderTopics(){const q=$('search').value.trim().toLowerCase();const list=topics.filter(t=>(category==='すべて'||t.category===category)&&`${t.id} ${t.en} ${t.ja}`.toLowerCase().includes(q));$('count').textContent=`${list.length} / 80 テーマ`;$('topics').replaceChildren();for(const t of list){const b=document.createElement('button');b.className='topic';const tag=document.createElement('small'),title=document.createElement('strong'),en=document.createElement('span');tag.textContent=`${String(t.id).padStart(2,'0')} / ${t.category}`;title.textContent=t.ja;en.textContent=t.en;en.lang='en';b.append(tag,title,en);b.onclick=()=>start(t);$('topics').append(b);}}
 for(const c of ['すべて',...new Set(topics.map(t=>t.category))]){const b=document.createElement('button');b.textContent=c;b.setAttribute('aria-pressed',String(c===category));b.onclick=()=>{category=c;for(const x of $('filters').children)x.setAttribute('aria-pressed',String(x===b));renderTopics();};$('filters').append(b);}
 function message(role,text,translation=''){const el=document.createElement('div');el.className=`bubble ${role}`;const name=document.createElement('small'),p=document.createElement('p');name.textContent=role==='user'?'YOU':persona.name;p.textContent=text;p.lang=role==='user'?'':'en';el.append(name,p);if(translation){const d=document.createElement('details'),s=document.createElement('summary'),j=document.createElement('p');s.textContent='日本語訳を見る';j.textContent=translation;d.append(s,j);el.append(d);}$('messages').append(el);$('messages').scrollTop=$('messages').scrollHeight;}
