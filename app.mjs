@@ -1,5 +1,6 @@
 import {topics} from './topics.mjs';
 import {createPersona} from './persona.mjs';
+import {portraitDataUri} from './portraits.mjs';
 const $=id=>document.getElementById(id);
 const endpoint='https://task-quest.onrender.com/api/talk-quest';
 let user=null,authApi=null,persona,topic=null,category='すべて',history=[],turn=0,pending=false,controller=null,failedMessage=null;
@@ -7,7 +8,7 @@ function newPartner(){
   persona=createPersona(crypto.getRandomValues(new Uint32Array(1))[0]);
   $('name').textContent=persona.name;
   const portrait=document.createElement('img');
-  portrait.src=`assets/portraits/${persona.portraitId}.webp`;
+  portrait.src=portraitDataUri(persona.portraitId);
   portrait.alt=`${persona.name}の人物イラスト`;
   portrait.width=384;portrait.height=384;
   portrait.onerror=()=>{const fallback=document.createElement('span');fallback.textContent=persona.name.slice(0,1);fallback.setAttribute('aria-label',`${persona.name}（イラストを読み込めませんでした）`);$('avatar').replaceChildren(fallback);};
