@@ -7,6 +7,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 try{
 const context=await browser.newContext({viewport:{width:1280,height:900}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.route('**/english-playroom/coin-reward.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.coinClaims=[];window.EnglishPlayroomCoins={awardTalk:async id=>window.coinClaims.push(id)};"}));
 await page.route('**/firebase-app.js',r=>r.fulfill({contentType:'text/javascript',body:'export const initializeApp=()=>({});'}));
 await page.route('**/firebase-auth.js',r=>r.fulfill({contentType:'text/javascript',body:`let callback;const user={getIdToken:async()=> 'mock-id-token'};export const getAuth=()=>({});export class GoogleAuthProvider{};export const onAuthStateChanged=(a,cb)=>{callback=cb;cb(null)};export const signInWithPopup=async()=>callback(user);export const signOut=async()=>callback(null);`}));
 let requests=[],mode='ok';
@@ -35,6 +36,8 @@ fs.mkdirSync(path.join(root,'test-results'),{recursive:true});await page.screens
 mode='slow';await page.locator('#message').fill('Goodbye');await page.locator('#send').click();await page.locator('#finish').click();await page.waitForTimeout(1000);assert.equal(await page.locator('#ending').isVisible(),true);assert.match(await page.locator('#summary').textContent(),/4回/);
 await page.locator('#again').click();assert.equal(await page.locator('#chooser').isVisible(),true);assert.equal(await page.locator('#shuffle').isEnabled(),true);await page.locator('#search').fill('');
 await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(root,'test-results/topics-desktop.png'),fullPage:true});
+assert.equal(await page.evaluate(()=>window.coinClaims.length),4);
+assert.equal(await page.evaluate(()=>new Set(window.coinClaims).size),1);
 assert.deepEqual(errors,[]);console.log('Browser checks passed: 80 themes, persona, login, history, question turns, hints, translations, retry, free ending/resume, cancellation, mobile overflow.');
 }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
