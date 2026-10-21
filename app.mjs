@@ -24,6 +24,26 @@ function hints(items){$('hints').replaceChildren();for(const text of items){cons
 function start(t){if(pending)return;topic=t;history=[];turn=0;failedMessage=null;$('messages').replaceChildren();$('error').textContent='';$('retry').hidden=true;$('message').value='';$('chooser').hidden=true;$('ending').hidden=true;$('chat').hidden=false;$('shuffle').disabled=true;$('chat-title').textContent=t.ja;$('chat-subtitle').textContent=t.en;$('invitation').textContent='まずは短いひとことで大丈夫。';message('assistant',t.en,t.ja);history.push({role:'assistant',text:t.en});hints(['I think...','I like...','How about you?']);$('chat').scrollIntoView({behavior:'smooth',block:'start'});$('message').focus();}
 function setPending(value){pending=value;$('send').disabled=value;$('message').disabled=value;$('retry').disabled=value;$('send').textContent=value?'返事を考えています…':'送信する ↗';}
 async function send(text){if(pending)return;if(!user){$('error').textContent='会話を続けるには、上の「Googleでログイン」からログインしてください。';return;}failedMessage=text;$('error').textContent='';$('retry').hidden=true;setPending(true);controller=new AbortController();const timeout=setTimeout(()=>controller?.abort(),45000);try{const token=await user.getIdToken();const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},signal:controller.signal,body:JSON.stringify({seed:persona.seed,topicId:topic.id,turn:turn+1,message:text,history:history.slice(-20)})});const data=await response.json();if(!response.ok)throw Error(data.error||'返事を取得できませんでした。');if(typeof data.reply!=='string'||!data.reply||!Array.isArray(data.hints))throw Error('返事を読み取れませんでした。');message('user',text);message('assistant',data.reply,data.translation);history.push({role:'user',text},{role:'assistant',text:data.reply});history=history.slice(-20);turn++;const rewardedTopic=topic.id;void coinReady.then(()=>window.EnglishPlayroomCoins?.awardTalk?.(rewardedTopic));$('message').value='';failedMessage=null;hints(data.hints);$('invitation').textContent=data.inviteQuestion?'今度はあなたから質問してみよう。ヒントも使えます。':'返事をしても、相手のことを聞いてもOK。';}catch(e){if(!$('chat').hidden){$('error').textContent=e.name==='AbortError'?'通信に時間がかかりました。入力は残っています。もう一度試せます。':e.message;$('retry').hidden=false;}}finally{clearTimeout(timeout);controller=null;setPending(false);if(!$('chat').hidden)$('message').focus();}}
+// Keep IME confirmation separate from submission, including Safari's legacy keyCode.
+let messageComposing=false;
+$('message').addEventListener('compositionstart',()=>{messageComposing=true;});
+$('message').addEventListener('compositionend',()=>{messageComposing=false;});
+$('message').addEventListener('keydown',event=>{
+  if(event.key!=='Enter'||event.isComposing||messageComposing||event.keyCode===229)return;
+  if(event.shiftKey||event.altKey){
+    // Alt+Enter does not insert a newline in every browser.
+    event.preventDefault();
+    const input=$('message');
+    if(input.value.length-(input.selectionEnd-input.selectionStart)<input.maxLength){
+      input.setRangeText('\n',input.selectionStart,input.selectionEnd,'end');
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    return;
+  }
+  if(event.ctrlKey||event.metaKey)return;
+  event.preventDefault();
+  if(!event.repeat&&!pending)$('form').requestSubmit($('send'));
+});
 $('form').onsubmit=e=>{e.preventDefault();const text=$('message').value.trim();if(text)send(text);};$('retry').onclick=()=>{if(failedMessage)send(failedMessage);};
 $('finish').onclick=()=>{if(pending)controller?.abort();$('chat').hidden=true;$('ending').hidden=false;$('summary').textContent=`${persona.name}と「${topic.ja}」について、${turn}回やり取りしました。`;$('again').focus();};
 $('resume').onclick=()=>{$('ending').hidden=true;$('chat').hidden=false;$('message').focus();};
