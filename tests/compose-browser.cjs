@@ -8,7 +8,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.route('https://talk.test/**',route=>{
   const file=new URL(route.request().url()).pathname.slice(1)||'index.html';
   let body=fs.readFileSync(path.join(root,file),'utf8');
-  if(file==='app.mjs')body=body.replace('initAuth();',"user={getIdToken:async()=> 'test-token'};");
+  if(file==='app.mjs')body=body.replace('initAuth();',"security={apiHeaders:async()=>({'Content-Type':'application/json',Authorization:'Bearer test-token','X-Firebase-AppCheck':'test-app-check'})};user={getIdToken:async()=> 'test-token'};");
   return route.fulfill({body,contentType:file.endsWith('.mjs')?'text/javascript':file.endsWith('.css')?'text/css':'text/html'});
  });
  await page.route('https://task-quest.onrender.com/api/talk-quest',async route=>{
