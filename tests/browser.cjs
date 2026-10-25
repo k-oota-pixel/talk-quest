@@ -7,6 +7,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 try{
 const context=await browser.newContext({viewport:{width:1280,height:900}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.route('**/english-playroom/shell-bridge.js*',r=>r.fulfill({contentType:'text/javascript',body:''}));
 await page.route('**/english-playroom/firebase-security.js',r=>r.fulfill({contentType:'text/javascript',body:"export const enableAppCheck=()=>null,apiHeaders=async()=>({'Content-Type':'application/json',Authorization:'Bearer mock-id-token','X-Firebase-AppCheck':'mock-app-check'});"}));
 await page.route('**/english-playroom/coin-reward.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.coinClaims=[];window.EnglishPlayroomCoins={awardTalk:async id=>window.coinClaims.push(id)};"}));
 await page.route('**/firebase-app.js',r=>r.fulfill({contentType:'text/javascript',body:'export const initializeApp=()=>({});'}));

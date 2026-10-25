@@ -5,7 +5,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
  try{
  const page=await browser.newPage();let requests=[];let release;
- await page.route('https://talk.test/**',route=>{
+ await page.route('**/english-playroom/shell-bridge.js*',r=>r.fulfill({contentType:'text/javascript',body:''}));
+await page.route('https://talk.test/**',route=>{
   const file=new URL(route.request().url()).pathname.slice(1)||'index.html';
   let body=fs.readFileSync(path.join(root,file),'utf8');
   if(file==='app.mjs')body=body.replace('initAuth();',"security={apiHeaders:async()=>({'Content-Type':'application/json',Authorization:'Bearer test-token','X-Firebase-AppCheck':'test-app-check'})};user={getIdToken:async()=> 'test-token'};");
