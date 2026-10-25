@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 let titleSession='',titleHint='';
 let coinReady=Promise.resolve();
 const endpoint='https://task-quest.onrender.com/api/talk-quest';
+globalThis.MonstudyMaterial?.setActivityGuard(()=>Boolean(pending || history.length || document.querySelector("textarea")?.value.trim()));
 let security=null,user=null,authApi=null,persona,topic=null,category='すべて',history=[],turn=0,pending=false,controller=null,failedMessage=null;
 function newPartner(){
   persona=createPersona(crypto.getRandomValues(new Uint32Array(1))[0]);
