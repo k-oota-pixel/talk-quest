@@ -1,0 +1,44 @@
+name: Prepare verified Monstudy 2.1.2 sources
+on:
+  push:
+    branches: ['codex/auth-session-2.1.2']
+    paths: ['.github/workflows/auth-session-212.yml']
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/auth-session-2.1.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply verified release changes
+        shell: python
+        run: |
+          import base64,json,pathlib,subprocess
+          expected=json.loads(base64.b64decode('eyJhcHAubWpzIjogIjlhNDhiNTRhMjQzYjY2NjhiNzQ3YzgwOGMwMmJlMjFhYTg0MDRmNjkiLCAiaW5kZXguaHRtbCI6ICIyZTFkOWY1YTNjMjRjMjE1ZmFlNzZkZmY1NGVhNjk0Y2Q5ZTExN2U1IiwgInRlc3RzL2Jyb3dzZXIuY2pzIjogIjBhYzVlZGYzNjc1MzcxOWYwZjc2MDNlMjg5M2E5MTRjMzA3ZjI0YzMifQ=='))
+          for path,wanted in expected.items():
+              p=pathlib.Path(path)
+              if wanted is None:
+                  assert not p.exists(), 'Unexpected existing file: '+path
+              else:
+                  actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+                  assert actual==wanted, 'Concurrent source change: '+path
+          patch=base64.b64decode('ZGlmZiAtLWdpdCBhL2FwcC5tanMgYi9hcHAubWpzCmluZGV4IDlhNDhiNTQuLmMzYjc5YWQgMTAwNjQ0Ci0tLSBhL2FwcC5tanMKKysrIGIvYXBwLm1qcwpAQCAtNTYgKzU2IEBAIG5ld1BhcnRuZXIoKTtyZW5kZXJUb3BpY3MoKTskKCdzdGF0dXMnKS50ZXh0Q29udGVudD0n44OG44O844Oe44Gv6Ieq55Sx44Gr6YG444G5Ci1hc3luYyBmdW5jdGlvbiBpbml0QXV0aCgpe3RyeXtjb25zdCBbe2luaXRpYWxpemVBcHB9LGEsc109YXdhaXQgUHJvbWlzZS5hbGwoW2ltcG9ydCgnaHR0cHM6Ly93d3cuZ3N0YXRpYy5jb20vZmlyZWJhc2Vqcy8xMy4wLjAvZmlyZWJhc2UtYXBwLmpzJyksaW1wb3J0KCdodHRwczovL3d3dy5nc3RhdGljLmNvbS9maXJlYmFzZWpzLzEzLjAuMC9maXJlYmFzZS1hdXRoLmpzJyksaW1wb3J0KCdodHRwczovL2stb290YS1waXhlbC5naXRodWIuaW8vZW5nbGlzaC1wbGF5cm9vbS9maXJlYmFzZS1zZWN1cml0eS5qcycpXSk7c2VjdXJpdHk9cztjb25zdCBhcHA9aW5pdGlhbGl6ZUFwcCh7YXBpS2V5OidBSXphU3lBbGxMalBjR2h5Z01TRUlPUlhoS1pPYURqWXZwU0o0RVEnLGF1dGhEb21haW46J2Vpa2VuLXJldHJ5LmZpcmViYXNlYXBwLmNvbScscHJvamVjdElkOidlaWtlbi1yZXRyeScsYXBwSWQ6JzE6MjMxMzA4NjcyMjk3OndlYjo1ZThiOGVkZTNhMDI0NmMyMzE4YjM4J30pO3MuZW5hYmxlQXBwQ2hlY2soYXBwKTtjb2luUmVhZHk9aW1wb3J0KCdodHRwczovL2stb290YS1waXhlbC5naXRodWIuaW8vZW5nbGlzaC1wbGF5cm9vbS9jb2luLXJld2FyZC5qcz92PTEuMTAuNCcpLmNhdGNoKCgpPT5udWxsKTtjb25zdCBhdXRoPWEuZ2V0QXV0aChhcHApO2F1dGhBcGk9ey4uLmEsYXV0aH07YS5vbkF1dGhTdGF0ZUNoYW5nZWQoYXV0aCx1PT57dXNlcj11OyQoJ2xvZ2luJykudGV4dENvbnRlbnQ9dT8n44Ot44Kw44Ki44Km44OIJzonR29vZ2xl44Gn44Ot44Kw44Kk44OzJzskKCdzdGF0dXMnKS50ZXh0Q29udGVudD11Pyfjg63jgrDjgqTjg7PmuIjjgb8gwrcg5rqW5YKZ44GM44Gn44GN44G+44GX44Gf44CC5aW944GN44Gq44OG44O844Oe44KS6YG444Gz44G+44GX44KH44GG44CCJzon44OG44O844Oe44Gv6Ieq55Sx44Gr6YG444G544G+44GZ44CCQUnjgajjga7kvJroqbHjgavjga9Hb29nbGXjg63jgrDjgqTjg7PjgYzlv4XopoHjgafjgZnjgIInO2lmKCF1JiZwZW5kaW5nKWNvbnRyb2xsZXI/LmFib3J0KCk7fSk7fWNhdGNoeyQoJ3N0YXR1cycpLnRleHRDb250ZW50PSfjg63jgrDjgqTjg7PmqZ/og73jgavmjqXntprjgafjgY3jgb7jgZvjgpPjgafjgZfjgZ/jgILpgJrkv6HjgpLnorroqo3jgZfjgablho3oqq3jgb/ovrzjgb/jgZfjgabjgY/jgaDjgZXjgYTjgIInO319DQorYXN5bmMgZnVuY3Rpb24gaW5pdEF1dGgoKXt0cnl7Y29uc3QgW3tpbml0aWFsaXplQXBwfSxhLHNdPWF3YWl0IFByb21pc2UuYWxsKFtpbXBvcnQoJ2h0dHBzOi8vd3d3LmdzdGF0aWMuY29tL2ZpcmViYXNlanMvMTMuMC4wL2ZpcmViYXNlLWFwcC5qcycpLGltcG9ydCgnaHR0cHM6Ly9rLW9vdGEtcGl4ZWwuZ2l0aHViLmlvL2VuZ2xpc2gtcGxheXJvb20vYXV0aC1zZXNzaW9uLmpzP3Y9Mi4xLjInKSxpbXBvcnQoJ2h0dHBzOi8vay1vb3RhLXBpeGVsLmdpdGh1Yi5pby9lbmdsaXNoLXBsYXlyb29tL2ZpcmViYXNlLXNlY3VyaXR5LmpzP3Y9Mi4xLjInKV0pO3NlY3VyaXR5PXM7Y29uc3QgYXBwPWluaXRpYWxpemVBcHAoe2FwaUtleTonQUl6YVN5QWxsTGpQY0doeWdNU0VJT1JYaEtaT2FEall2cFNKNEVRJyxhdXRoRG9tYWluOidlaWtlbi1yZXRyeS5maXJlYmFzZWFwcC5jb20nLHByb2plY3RJZDonZWlrZW4tcmV0cnknLGFwcElkOicxOjIzMTMwODY3MjI5Nzp3ZWI6NWU4YjhlZGUzYTAyNDZjMjMxOGIzOCd9KTtzLmVuYWJsZUFwcENoZWNrKGFwcCk7Y29pblJlYWR5PWltcG9ydCgnaHR0cHM6Ly9rLW9vdGEtcGl4ZWwuZ2l0aHViLmlvL2VuZ2xpc2gtcGxheXJvb20vY29pbi1yZXdhcmQuanM/dj0yLjEuMicpLmNhdGNoKCgpPT5udWxsKTtjb25zdCBhdXRoPWEuZ2V0QXV0aChhcHApO2F1dGhBcGk9ey4uLmEsYXV0aH07YS5vbkF1dGhTdGF0ZUNoYW5nZWQoYXV0aCx1PT57dXNlcj11OyQoJ2xvZ2luJykudGV4dENvbnRlbnQ9dT8n44Ot44Kw44Ki44Km44OIJzonR29vZ2xl44Gn44Ot44Kw44Kk44OzJzskKCdzdGF0dXMnKS50ZXh0Q29udGVudD11Pyfjg63jgrDjgqTjg7PmuIjjgb8gwrcg5rqW5YKZ44GM44Gn44GN44G+44GX44Gf44CC5aW944GN44Gq44OG44O844Oe44KS6YG444Gz44G+44GX44KH44GG44CCJzon44OG44O844Oe44Gv6Ieq55Sx44Gr6YG444G544G+44GZ44CCQUnjgajjga7kvJroqbHjgavjga9Hb29nbGXjg63jgrDjgqTjg7PjgYzlv4XopoHjgafjgZnjgIInO2lmKCF1JiZwZW5kaW5nKWNvbnRyb2xsZXI/LmFib3J0KCk7fSk7fWNhdGNoeyQoJ3N0YXR1cycpLnRleHRDb250ZW50PSfjg63jgrDjgqTjg7PmqZ/og73jgavmjqXntprjgafjgY3jgb7jgZvjgpPjgafjgZfjgZ/jgILpgJrkv6HjgpLnorroqo3jgZfjgablho3oqq3jgb/ovrzjgb/jgZfjgabjgY/jgaDjgZXjgYTjgIInO319DQpkaWZmIC0tZ2l0IGEvaW5kZXguaHRtbCBiL2luZGV4Lmh0bWwKaW5kZXggMmUxZDlmNS4uNWEwMWIzMiAxMDA2NDQKLS0tIGEvaW5kZXguaHRtbAorKysgYi9pbmRleC5odG1sCkBAIC0xMiArMTIgQEAKLTxmb290ZXI+57WC5LqG44Gv44GE44Gk44Gn44KC6Ieq55Sx44Gn44GZ44CC5Lya6Kmx44Gv44GT44Gu55S76Z2i44KS6ZaJ44GY44KL44Go5raI44GI44G+44GZ44CCPGJyPkFJ44Gu6L+U562U44Gv5q2j56K644Gn44Gq44GE5aC05ZCI44GM44GC44KK44G+44GZ44CC5L2P5omA44O76YCj57Wh5YWI44Gq44Gp44Gv5pu444GL44Ga44Gr57e057+S44GX44G+44GX44KH44GG44CCPC9mb290ZXI+PC9tYWluPjxzY3JpcHQgdHlwZT0ibW9kdWxlIiBzcmM9ImFwcC5tanM/dj0yLjEuMSI+PC9zY3JpcHQ+PC9ib2R5PjwvaHRtbD4NCis8Zm9vdGVyPue1guS6huOBr+OBhOOBpOOBp+OCguiHqueUseOBp+OBmeOAguS8muipseOBr+OBk+OBrueUu+mdouOCkumWieOBmOOCi+OBqOa2iOOBiOOBvuOBmeOAgjxicj5BSeOBrui/lOetlOOBr+ato+eiuuOBp+OBquOBhOWgtOWQiOOBjOOBguOCiuOBvuOBmeOAguS9j+aJgOODu+mAo+e1oeWFiOOBquOBqeOBr+abuOOBi+OBmuOBq+e3tOe/kuOBl+OBvuOBl+OCh+OBhuOAgjwvZm9vdGVyPjwvbWFpbj48c2NyaXB0IHR5cGU9Im1vZHVsZSIgc3JjPSJhcHAubWpzP3Y9Mi4xLjIiPjwvc2NyaXB0PjwvYm9keT48L2h0bWw+DQpkaWZmIC0tZ2l0IGEvdGVzdHMvYnJvd3Nlci5janMgYi90ZXN0cy9icm93c2VyLmNqcwppbmRleCAwYWM1ZWRmLi5jYjQzNDY1IDEwMDY0NAotLS0gYS90ZXN0cy9icm93c2VyLmNqcworKysgYi90ZXN0cy9icm93c2VyLmNqcwpAQCAtMTEgKzExIEBAIGF3YWl0IHBhZ2Uucm91dGUoJyoqL2VuZ2xpc2gtcGxheXJvb20vc2hlbGwtYnJpZGdlLmpzKicscj0+ci5mdWxmaWxsKHtjb250ZW50VHlwCi1hd2FpdCBwYWdlLnJvdXRlKCcqKi9lbmdsaXNoLXBsYXlyb29tL2ZpcmViYXNlLXNlY3VyaXR5LmpzJyxyPT5yLmZ1bGZpbGwoe2NvbnRlbnRUeXBlOid0ZXh0L2phdmFzY3JpcHQnLGJvZHk6ImV4cG9ydCBjb25zdCBlbmFibGVBcHBDaGVjaz0oKT0+bnVsbCxhcGlIZWFkZXJzPWFzeW5jKCk9Pih7J0NvbnRlbnQtVHlwZSc6J2FwcGxpY2F0aW9uL2pzb24nLEF1dGhvcml6YXRpb246J0JlYXJlciBtb2NrLWlkLXRva2VuJywnWC1GaXJlYmFzZS1BcHBDaGVjayc6J21vY2stYXBwLWNoZWNrJ30pOyJ9KSk7Cithd2FpdCBwYWdlLnJvdXRlKCcqKi9lbmdsaXNoLXBsYXlyb29tL2ZpcmViYXNlLXNlY3VyaXR5LmpzKicscj0+ci5mdWxmaWxsKHtjb250ZW50VHlwZTondGV4dC9qYXZhc2NyaXB0Jyxib2R5OiJleHBvcnQgY29uc3QgZW5hYmxlQXBwQ2hlY2s9KCk9Pm51bGwsYXBpSGVhZGVycz1hc3luYygpPT4oeydDb250ZW50LVR5cGUnOidhcHBsaWNhdGlvbi9qc29uJyxBdXRob3JpemF0aW9uOidCZWFyZXIgbW9jay1pZC10b2tlbicsJ1gtRmlyZWJhc2UtQXBwQ2hlY2snOidtb2NrLWFwcC1jaGVjayd9KTsifSkpOwpAQCAtMTYsMCArMTcgQEAgYXdhaXQgcGFnZS5yb3V0ZSgnKiovYXBpL3RhbGstcXVlc3QnLGFzeW5jIHI9Pnthc3NlcnQuZXF1YWwoci5yZXF1ZXN0KCkuaGVhZGVycygKK2F3YWl0IHBhZ2Uucm91dGUoJyoqL2F1dGgtc2Vzc2lvbi5qcyonLHI9PnIuZnVsZmlsbCh7Y29udGVudFR5cGU6J3RleHQvamF2YXNjcmlwdCcsYm9keToiZXhwb3J0ICogZnJvbSAnaHR0cHM6Ly93d3cuZ3N0YXRpYy5jb20vZmlyZWJhc2Vqcy8xMy4wLjAvZmlyZWJhc2UtYXV0aC5qcyc7In0pKTsK')
+          subprocess.run(['git','apply','--check','--unidiff-zero','--whitespace=nowarn','-'],input=patch,check=True)
+          subprocess.run(['git','apply','--unidiff-zero','--whitespace=nowarn','-'],input=patch,check=True)
+          pathlib.Path('/tmp/monstudy-changed.json').write_text(json.dumps(list(expected)))
+      - name: Commit verified source to preparation branch
+        shell: python
+        run: |
+          import json,subprocess
+          files=json.load(open('/tmp/monstudy-changed.json'))
+          subprocess.run(['git','config','user.name','github-actions[bot]'],check=True)
+          subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'],check=True)
+          subprocess.run(['git','add','--',*files],check=True)
+          subprocess.run(['git','commit','-m','Implement shared Monstudy 2.1.2 navigation and material integration'],check=True)
+          subprocess.run(['git','push','origin','HEAD:codex/auth-session-2.1.2'],check=True)
