@@ -39,7 +39,7 @@ fs.mkdirSync(path.join(root,'test-results'),{recursive:true});await page.screens
 mode='slow';await page.locator('#message').fill('Goodbye');await page.locator('#send').click();await page.locator('#finish').click();await page.waitForTimeout(1000);assert.equal(await page.locator('#ending').isVisible(),true);assert.match(await page.locator('#summary').textContent(),/4回/);
 await page.locator('#again').click();assert.equal(await page.locator('#chooser').isVisible(),true);assert.equal(await page.locator('#shuffle').isEnabled(),true);await page.locator('#search').fill('');
 await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(root,'test-results/topics-desktop.png'),fullPage:true});
-assert.equal(await page.evaluate(()=>window.coinClaims.length),4);
+assert.equal(await page.evaluate(()=>window.coinClaims.length),1,'one reward check per completed conversation');
 assert.equal(await page.evaluate(()=>new Set(window.coinClaims).size),1);
 assert.deepEqual(errors,[]);console.log('Browser checks passed: 80 themes, persona, login, history, question turns, hints, translations, retry, free ending/resume, cancellation, mobile overflow.');
 }finally{await browser.close();server.close();}
