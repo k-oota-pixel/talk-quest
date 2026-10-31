@@ -9,7 +9,7 @@ try{
 const context=await browser.newContext({viewport:{width:1280,height:900}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/english-playroom/shell-bridge.js*',r=>r.fulfill({contentType:'text/javascript',body:''}));
 await page.route('**/english-playroom/firebase-security.js*',r=>r.fulfill({contentType:'text/javascript',body:"export const enableAppCheck=()=>null,apiHeaders=async()=>({'Content-Type':'application/json',Authorization:'Bearer mock-id-token','X-Firebase-AppCheck':'mock-app-check'});"}));
-await page.route('**/english-playroom/coin-reward.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.coinClaims=[];window.EnglishPlayroomCoins={awardTalk:async id=>window.coinClaims.push(id)};"}));
+await page.route('**/english-playroom/coin-reward.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.coinClaims=[];window.titleBatches=[];window.learningActivities=[];window.EnglishPlayroomCoins={recordTitleEvents:async(appId,events)=>window.titleBatches.push({appId,events}),recordLearningActivity:async appId=>window.learningActivities.push(appId),awardTalk:async id=>window.coinClaims.push(id)};"}));
 await page.route('**/firebase-app.js',r=>r.fulfill({contentType:'text/javascript',body:'export const initializeApp=()=>({});'}));
 await page.route('**/firebase-auth.js',r=>r.fulfill({contentType:'text/javascript',body:`let callback;const user={uid:'mock-user',getIdToken:async()=> 'mock-id-token'};export const getAuth=()=>({});export class GoogleAuthProvider{};export const onAuthStateChanged=(a,cb)=>{callback=cb;cb(null)};export const signInWithPopup=async()=>callback(user);export const signOut=async()=>callback(null);`}));
 let requests=[],mode='ok';
@@ -33,7 +33,7 @@ await page.locator('#help summary').click();await page.locator('#hints button').
 await page.locator('.bubble details summary').first().click();assert.ok(await page.locator('.bubble details').first().getAttribute('open')!==null);
 mode='error';await page.locator('#send').click();await page.locator('#retry').waitFor({state:'visible'});assert.equal(await page.locator('#message').inputValue(),'Where do you hike?');assert.equal(await page.locator('.bubble.user').count(),3);
 mode='ok';await page.locator('#retry').click();await page.waitForFunction(()=>document.querySelectorAll('.bubble.user').length===4);
-await page.locator('#finish').click();assert.match(await page.locator('#summary').textContent(),/4回/);await page.locator('#resume').click();assert.equal(await page.locator('.bubble.user').count(),4);
+await page.locator('#finish').click();assert.match(await page.locator('#summary').textContent(),/4回/);await page.waitForFunction(()=>window.titleBatches?.length===1&&window.learningActivities?.length===1&&window.coinClaims?.length===1);const recorded=await page.evaluate(()=>({titles:window.titleBatches,activities:window.learningActivities,coins:window.coinClaims}));assert.equal(recorded.titles[0].appId,'talk-quest');assert.equal(recorded.titles[0].events.length,4);assert.equal(recorded.titles[0].events[0].kind,'chat');assert.equal(recorded.titles[0].events[0].expectedUid,'mock-user');assert.deepEqual(recorded.activities,['talk-quest']);assert.equal(recorded.coins.length,1);await page.locator('#resume').click();assert.equal(await page.locator('.bubble.user').count(),4);
 await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 fs.mkdirSync(path.join(root,'test-results'),{recursive:true});await page.screenshot({path:path.join(root,'test-results/chat-mobile.png'),fullPage:true});
 mode='slow';await page.locator('#message').fill('Goodbye');await page.locator('#send').click();await page.locator('#finish').click();await page.waitForTimeout(1000);assert.equal(await page.locator('#ending').isVisible(),true);assert.match(await page.locator('#summary').textContent(),/4回/);
@@ -41,6 +41,6 @@ await page.locator('#again').click();assert.equal(await page.locator('#chooser')
 await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(root,'test-results/topics-desktop.png'),fullPage:true});
 assert.equal(await page.evaluate(()=>window.coinClaims.length),1,'one reward check per completed conversation');
 assert.equal(await page.evaluate(()=>new Set(window.coinClaims).size),1);
-assert.deepEqual(errors,[]);console.log('Browser checks passed: 80 themes, persona, login, history, question turns, hints, translations, retry, free ending/resume, cancellation, mobile overflow.');
+assert.deepEqual(errors,[]);console.log('Browser checks passed: 80 themes, persona, login, history, question turns, hints, translations, retry, title events, learning activity, one reward, free ending/resume, cancellation, mobile overflow.');
 }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
